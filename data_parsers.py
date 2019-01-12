@@ -1,4 +1,6 @@
 import struct
+from enum import Enum
+
 
 def parse(origin, port, data):
     if origin == "server" or port == 3333:
@@ -8,9 +10,16 @@ def parse(origin, port, data):
     print(hex(packet_id))
 
 
+def position_parser():
+    pass
+
+
 def get_packet_id(data):
     return data.hex()[:4]
 
+
+class PacketType(Enum):
+    Position = "6d76"
 
 """
 Packet dump from jumping:

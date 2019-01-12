@@ -1,8 +1,7 @@
 import socket
 from threading import Thread
-import dataParser
+import data_parsers
 import importlib
-import inputParser
 
 
 class ClientToProxy(Thread):
@@ -22,8 +21,9 @@ class ClientToProxy(Thread):
             data = self.client_connection.recv(4096)
             if data:
                 try:
-                    importlib.reload(dataParser)
-                    dataParser.parse("client", self.port, data)
+                    importlib.reload(data_parsers)
+                    data_parsers.parse("client", self.port, data)
+                #TODO: better exception handling, handle more specific exceptions
                 except Exception as e:
                     print(e)
                     continue
@@ -38,16 +38,16 @@ class ProxyToServer(Thread):
         self.client_connection = None
         self.server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_connection.connect((self.host, self.port))
-        print("Proxy has connectet to server on port {}".format(port))
+        print("Proxy has connected to server on port {}".format(port))
 
     def run(self):
         while True:
             data = self.server_connection.recv(4096)
             if data:
-                #print("{} <- {}".format(self.port, data.hex()))
                 try:
-                    importlib.reload(dataParser)
-                    dataParser.parse("server", self.port, data)
+                    importlib.reload(data_parsers)
+                    data_parsers.parse("server", self.port, data)
+                #TODO: better exception handling, handle more specific exceptions
                 except Exception as e:
                     print(e)
                     continue
@@ -75,48 +75,14 @@ class Proxy(Thread):
         proxy_to_server.start()
         print("Proxy on port {} established".format(self.client_port))
 
-host = '127.0.0.1'
-client_port_master = 3333
-server_port_master = 5555
 
-client_port_game0 = 3000
-server_port_game0 = 5000
-
-client_port_game1 = 3001
-server_port_game1 = 5001
-
-client_port_game2 = 3002
-server_port_game2 = 5002
-
-client_port_game3 = 3003
-server_port_game3 = 5003
-
-client_port_game4 = 3004
-server_port_game4 = 5004
-
-client_port_game5 = 3005
-server_port_game5 = 5005
-
-master_proxy = Proxy(host, client_port_master, host, server_port_master, 'master_proxy')
-
-master_proxy.start()
-game_proxy0 = Proxy(host, client_port_game0, host, server_port_game0, 'game_proxy0')
-game_proxy1 = Proxy(host, client_port_game1, host, server_port_game1, 'game_proxy1')
-game_proxy2 = Proxy(host, client_port_game2, host, server_port_game2, 'game_proxy2')
-game_proxy3 = Proxy(host, client_port_game3, host, server_port_game3, 'game_proxy3')
-game_proxy4 = Proxy(host, client_port_game4, host, server_port_game4, 'game_proxy4')
-game_proxy5 = Proxy(host, client_port_game5, host, server_port_game5, 'game_proxy5')
-
-proxies = [master_proxy, game_proxy0, game_proxy1, game_proxy2, game_proxy3, game_proxy4, game_proxy5]
-
-game_proxy0.start()
-game_proxy1.start()
-game_proxy2.start()
-game_proxy3.start()
-game_proxy4.start()
-game_proxy5.start()
-input_parser = inputParser.InputParser(proxies)
-
-while True:
-    cmd = input("$ ")
-    input_parser.run_command(cmd)
+class ProxyCollection:
+    def __init__(self, proxy_list):
+        if not isinstance(proxy_list, list):
+            raise TypeError("The proxy_list argument is of type {} while expected type is {}".format(
+                type(proxy_list), list))
+        for proxy in proxy_list:
+            if not isinstance(proxy, Proxy):
+                raise TypeError("The proxy_list contains some element which is not a {} object".format(Proxy))
+        self.proxy_list = proxy_list
+        self.selected_proxy = None

@@ -1,14 +1,17 @@
 import argparse
 import sys
+import proxy
 
 
 class InputParser:
-
-    def __init__(self, proxy_list):
-        self.proxy_list = proxy_list
+    def __init__(self, proxy_collection):
+        if not isinstance(proxy_collection, proxy.ProxyCollection):
+            raise TypeError("The proxy_collection argument is of type {} while the expected type is {}".format(
+                type(proxy_collection), proxy.ProxyCollection))
+        self.proxy_collection = proxy_collection
         self.selected_proxy = None
         self.command = None
-        self.proxy_command = ProxyCommand(self)
+        self.proxy_command = ProxyCommand(proxy_collection)
 
     def run_command(self, command):
         self.command = command
@@ -28,10 +31,7 @@ class InputParser:
         except SystemExit:
             return
 
-        if args.command == 'proxy':
-            getattr(self, args.command)()
-        else:
-            getattr(self, args.command)()
+        getattr(self, args.command)()
 
     def shutdown(self):
         print('Shutting down')
@@ -44,8 +44,8 @@ class InputParser:
 
 
 class ProxyCommand:
-    def __init__(self, input_parser):
-        self.input_parser = input_parser
+    def __init__(self, proxy_collection):
+        self.proxy_collection = proxy_collection
         self.command = None
 
     def run_command(self, command):
@@ -53,8 +53,8 @@ class ProxyCommand:
         parser = argparse.ArgumentParser(description="Allows you to choose proxy server to interact with", usage='''<command> [<args<]
         The commands are:
             ls        Lists all proxy servers by name
-            get         Displays the currently selected proxy server
-            change         Changes the proxy server
+            get       Displays the currently selected proxy server
+            select    Select the proxy server to interact with
                 ''')
         parser.add_argument('command', help='Subcommand to run')
         try:
@@ -65,40 +65,37 @@ class ProxyCommand:
                 return
         except SystemExit:
             return
-        print("Command: {}".format(args.command))
         getattr(self, args.command)()
 
     def ls(self):
-        print(1)
-        print(self.input_parser.proxy_list)
-        for proxy in self.input_parser.proxy_list:
+        for proxy in self.proxy_collection.proxy_list:
             print("Proxy: {}".format(proxy.name))
 
     def get(self):
-        if self.input_parser.selected_proxy is None:
+        if self.proxy_collection.selected_proxy is None:
             print('There is no selected proxy')
         else:
-            print("Selected proxy: {}".format(self.input_parser.selected_proxy.name))
+            print("Selected proxy: {}".format(self.proxy_collection.selected_proxy.name))
 
-    def change(self):
+    def select(self):
         try:
             new_proxy_name = self.command.split()[1:2][0]
         except IndexError:
             print("You need to provide the name of a proxy to change to")
             return
 
-        if self.input_parser.selected_proxy is not None:
-            if self.input_parser.selected_proxy.name == new_proxy_name:
-                print("{} is already the selected proxy".format(self.input_parser.selected_proxy.name))
+        if self.proxy_collection.selected_proxy is not None:
+            if self.proxy_collection.selected_proxy.name == new_proxy_name:
+                print("{} is already the selected proxy".format(self.proxy_collection.selected_proxy.name))
                 return
 
-        changed = False
-        for proxy in self.input_parser.proxy_list:
+        selected = False
+        for proxy in self.proxy_collection.proxy_list:
             if new_proxy_name == proxy.name:
-                self.input_parser.selected_proxy = proxy
-                changed = True
+                self.proxy_collection.selected_proxy = proxy
+                selected = True
 
-        if changed:
-            print("The selected proxy is now {}".format(self.input_parser.selected_proxy.name))
+        if selected:
+            print("The selected proxy is now {}".format(self.proxy_collection.selected_proxy.name))
         else:
             print("A proxy with the name {} does not exist".format(new_proxy_name))
