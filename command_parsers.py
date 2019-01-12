@@ -11,7 +11,7 @@ class InputParser:
         self.proxy_collection = proxy_collection
         self.selected_proxy = None
         self.command = None
-        self.proxy_command = ProxyCommand(proxy_collection)
+        self.proxy_command = ProxyCommandParser(proxy_collection)
 
     def run_command(self, command):
         self.command = command
@@ -39,11 +39,10 @@ class InputParser:
 
     def proxy(self):
         command = " ".join(self.command.split()[1:])
-        print(command)
         self.proxy_command.run_command(command)
 
 
-class ProxyCommand:
+class ProxyCommandParser:
     def __init__(self, proxy_collection):
         self.proxy_collection = proxy_collection
         self.command = None
@@ -52,9 +51,9 @@ class ProxyCommand:
         self.command = command
         parser = argparse.ArgumentParser(description="Allows you to choose proxy server to interact with", usage='''<command> [<args<]
         The commands are:
-            ls        Lists all proxy servers by name
-            get       Displays the currently selected proxy server
-            select    Select the proxy server to interact with
+            ls                      Lists all proxy servers by name
+            get                     Displays the currently selected proxy server
+            select <proxy name>     Select the proxy server to interact with
                 ''')
         parser.add_argument('command', help='Subcommand to run')
         try:
